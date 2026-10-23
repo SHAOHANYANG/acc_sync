@@ -153,4 +153,4 @@ python -m sync_eval analyze --input local-data/session_01_energy.csv --session s
 5. 没有人工对应的预测记为 `unmatched_predictions`，待复核。只有本人确认标注覆盖完整并加上 `--annotations-complete`，才计算误报和 precision。
 6. 无参考事件或无预测时，不强行把未定义比例写成零；不会输出未经负例定义支持的 accuracy/specificity。
 
-控制台只输出固定成功/失败提示，不打印原始行、数值、路径或异常堆栈。失败时先在本机核查列名、时间起点、能量标度、文件是否已存在及参数；不要为排错直接把真实文件发到聊天。
+控制台只输出成功或安全的错误代码，不打印原始行、数值、路径、异常正文或异常堆栈。错误代码仅含阶段（PREPARE/ANALYZE）、固定类别（例如 FILE_NOT_FOUND、ALREADY_EXISTS、VALUE_ERROR）与本项目公开源码中的函数/行号；可以只反馈这一行帮助排错，不需要回传真实文件或截图。

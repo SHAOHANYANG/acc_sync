@@ -177,6 +177,19 @@ class OfflineIOTests(unittest.TestCase):
         self.assertEqual(result, 2)
         self.assertNotIn("FICTIONAL_PRIVATE_PATH", stream.getvalue())
         self.assertNotIn("Traceback", stream.getvalue())
+        self.assertIn("ARGUMENTS/VALUE_ERROR", stream.getvalue())
+
+    def test_failure_code_never_includes_exception_payload(self):
+        stream = io.StringIO()
+        with patch("sync_eval.cli.prepare_curve", side_effect=ValueError("FICTIONAL_PRIVATE_VALUE")), \
+                contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
+            result = main(["prepare", "--kind", "csv", "--input", "FICTIONAL_PRIVATE_PATH",
+                           "--session", "session_01", "--time-origin", "first",
+                           "--energy-scale", "linear"])
+        self.assertEqual(result, 2)
+        self.assertIn("PREPARE/VALUE_ERROR", stream.getvalue())
+        self.assertNotIn("FICTIONAL_PRIVATE", stream.getvalue())
+        self.assertNotIn("Traceback", stream.getvalue())
 
     def test_outputs_cannot_use_public_repository_directories(self):
         repository = Path(__file__).resolve().parents[1]

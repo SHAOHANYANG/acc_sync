@@ -187,10 +187,38 @@ def parser():
     return root
 
 
+def _safe_failure(exception, stage):
+    """Expose only a fixed category and public code location, never exception text."""
+    categories = {"FileNotFoundError": "FILE_NOT_FOUND", "FileExistsError": "ALREADY_EXISTS",
+                  "PermissionError": "PERMISSION", "ValueError": "VALUE_ERROR",
+                  "KeyError": "COLUMN_MISSING", "TypeError": "TYPE_ERROR",
+                  "ModuleNotFoundError": "DEPENDENCY_MISSING", "OverflowError": "NUMBER_RANGE",
+                  "JSONDecodeError": "JSON_FORMAT", "UnicodeDecodeError": "TEXT_ENCODING",
+                  "OSError": "FILE_IO_ERROR", "error": "BINARY_FORMAT"}
+    category = categories.get(type(exception).__name__, "INTERNAL_ERROR")
+    functions = {"main", "parser", "error", "analyze", "_plot", "demo", "check_session_id",
+                 "private_directory", "write_csv", "seconds", "_number", "_array",
+                 "plotly_energy", "prepare_curve", "load_curve", "load_annotations",
+                 "validate_curve", "quantile", "choose_thresholds", "window_average",
+                 "merge_windows", "valid_coverage", "interval_iou", "evaluate_events"}
+    location = "entry"
+    trace = exception.__traceback__
+    while trace is not None:
+        frame = trace.tb_frame
+        module = frame.f_globals.get("__name__")
+        function = frame.f_code.co_name
+        if module in {"sync_eval.cli", "sync_eval.io", "sync_eval.core"} and function in functions:
+            location = f"{module}.{function}:{trace.tb_lineno}"
+        trace = trace.tb_next
+    print(f"FAILED [{stage}/{category}/{location}]: No input details are printed.")
+
+
 def main(argv=None):
+    stage = "ARGUMENTS"
     try:
         options = vars(parser().parse_args(argv))
         command = options.pop("command")
+        stage = {"prepare": "PREPARE", "analyze": "ANALYZE", "demo": "DEMO"}[command]
         if command == "prepare":
             options["session_id"] = options.pop("session")
             options["input_path"] = options.pop("input")
@@ -201,9 +229,8 @@ def main(argv=None):
             analyze(**options)
         else:
             demo(**options)
-    except Exception:
-        # Never echo input, identifiers, values, or traceback text to a chat/tool.
-        print("FAILED: check the local inputs and parameters. No input details are printed.")
+    except Exception as exception:
+        _safe_failure(exception, stage)
         return 2
     print("SUCCESS: files saved locally. No input values are printed.")
     return 0
