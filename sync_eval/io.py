@@ -110,8 +110,9 @@ def prepare_curve(input_path, *, kind, session_id, time_origin,
                   mapping_dir="private", keep_pre_video=False):
     """Whitelist two numeric columns; keep source/clock linkage only in private map.
 
-    video_time = source_time - time_origin + offset_seconds.
-    For datetime input, time_origin is the source clock at video time zero.
+    output_time = source_time - time_origin + offset_seconds.
+    'first' uses the first curve point without claiming video alignment.
+    An explicit origin declares the source clock at video time zero.
     """
     check_session_id(session_id)
     input_path = Path(input_path).resolve()
@@ -124,16 +125,18 @@ def prepare_curve(input_path, *, kind, session_id, time_origin,
         raw_energy = [row[energy_column] for row in rows]
     else:
         raise ValueError("Unsupported source format.")
-    if len(raw_times) != len(raw_energy):
+    if len(raw_times) != len(raw_energy) or len(raw_times) < 2:
         raise ValueError("Unpaired data.")
     if not math.isfinite(offset_seconds):
         raise ValueError("Invalid time offset.")
+    time_reference = "curve" if str(time_origin).lower() == "first" else "video"
+    resolved_origin = raw_times[0] if time_reference == "curve" else time_origin
     if time_format == "datetime":
-        origin = datetime.fromisoformat(str(time_origin).replace("Z", "+00:00"))
+        origin = datetime.fromisoformat(str(resolved_origin).replace("Z", "+00:00"))
         converted = [(datetime.fromisoformat(str(t).replace("Z", "+00:00"))
                       - origin).total_seconds() + offset_seconds for t in raw_times]
     elif time_format == "seconds":
-        converted = [seconds(t) - seconds(time_origin) + offset_seconds for t in raw_times]
+        converted = [seconds(t) - seconds(resolved_origin) + offset_seconds for t in raw_times]
     else:
         raise ValueError("Unsupported time format.")
     values = [_number(e) for e in raw_energy]
@@ -145,31 +148,41 @@ def prepare_curve(input_path, *, kind, session_id, time_origin,
     times, energies = [p[0] for p in pairs], [p[1] for p in pairs]
     validate_curve(times, energies)
     destination = private_directory(output_dir) / f"{session_id}_energy.csv"
+    timebase_path = destination.with_suffix(".timebase.json")
     mapping_path = private_directory(mapping_dir) / "session_map.csv"
-    if destination.exists():
+    if destination.exists() or timebase_path.exists():
         raise FileExistsError("Choose an unused session ID.")
     mapping_fields = ["session_id", "source_path", "source_kind", "time_format",
-                      "time_origin", "offset_seconds", "source_energy_scale"]
+                      "time_origin", "offset_seconds", "source_energy_scale", "time_reference"]
     existing = []
     if mapping_path.exists():
         with mapping_path.open(newline="", encoding="utf-8") as handle:
             reader = csv.DictReader(handle)
-            if reader.fieldnames != mapping_fields:
+            if reader.fieldnames not in [mapping_fields, mapping_fields[:-1]]:
                 raise ValueError("Unexpected private mapping format.")
             existing = list(reader)
+            for row in existing:
+                row.setdefault("time_reference", "video")
         if any(row["session_id"] == session_id for row in existing):
             raise ValueError("Session ID is already in use.")
     mapping_row = dict(zip(mapping_fields, [session_id, str(input_path), kind, time_format,
-                                          time_origin, offset_seconds, energy_scale]))
+                                          resolved_origin, offset_seconds, energy_scale, time_reference]))
     temporary_map = mapping_path.with_suffix(".csv.tmp")
     destination_created = False
+    timebase_created = False
     try:
         write_csv(temporary_map, existing + [mapping_row], mapping_fields)
         write_csv(destination, ({"time_s": t, "energy": e} for t, e in pairs),
                   ["time_s", "energy"])
         destination_created = True
+        with timebase_path.open("x", encoding="utf-8") as handle:
+            timebase_created = True
+            json.dump({"time_reference": time_reference,
+                       "video_origin_supplied": time_reference == "video"}, handle)
         temporary_map.replace(mapping_path)
     except Exception:
+        if timebase_created:
+            timebase_path.unlink()
         if destination_created:
             destination.unlink()
         if temporary_map.exists():

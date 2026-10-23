@@ -223,7 +223,35 @@ class OfflineIOTests(unittest.TestCase):
                 prepare_curve(source, kind="csv", session_id="session_01", time_origin="0",
                               output_dir=self.root / "prepared", mapping_dir=self.root / "private")
         self.assertFalse((self.root / "prepared" / "session_01_energy.csv").exists())
+        self.assertFalse((self.root / "prepared" / "session_01_energy.timebase.json").exists())
         self.assertTrue(source.exists())
+
+    def test_curve_relative_origin_needs_no_video_and_keeps_absolute_time_private(self):
+        source = self.root / "session_01_fake.csv"
+        write_csv(source, [{"timestamp": f"2099-01-01T10:00:{10 + i:02d}", "energy": i + 1}
+                           for i in range(8)], ["timestamp", "energy"])
+        prepared = prepare_curve(source, kind="csv", session_id="session_01", time_origin="first",
+                                  time_format="datetime", time_column="timestamp",
+                                  output_dir=self.root / "prepared", mapping_dir=self.root / "private")
+        self.assertEqual(load_curve(prepared)[0], list(range(8)))
+        metadata = prepared.with_suffix(".timebase.json")
+        self.assertEqual(json.loads(metadata.read_text())["time_reference"], "curve")
+        self.assertNotIn("2099", metadata.read_text())
+        result = analyze(prepared, session_id="session_01", output_dir=self.root / "results",
+                         thresholds=(3, 6))
+        self.assertEqual(result["time_reference"], "curve")
+
+    def test_curve_relative_data_cannot_silently_match_video_annotations(self):
+        source = self.root / "session_01_fake.csv"
+        write_csv(source, [{"time_s": i, "energy": i + 1} for i in range(8)], ["time_s", "energy"])
+        prepared = prepare_curve(source, kind="csv", session_id="session_01", time_origin="first",
+                                  output_dir=self.root / "prepared", mapping_dir=self.root / "private")
+        annotations = self.root / "session_01_annotations.csv"
+        write_csv(annotations, [{"start": 0, "end": 2, "activity_type": "singing"}],
+                  ["start", "end", "activity_type"])
+        with self.assertRaises(ValueError):
+            analyze(prepared, session_id="session_01", annotations=annotations,
+                    output_dir=self.root / "results", thresholds=(3, 6))
 
 
 if __name__ == "__main__":

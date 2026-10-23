@@ -42,21 +42,33 @@ python -m sync_eval demo --output-dir local-results/synthetic-with-plot --plot
 
 ## 时间如何与录像对齐
 
-所有分析和人工标注统一使用“录像开始后的秒数”。转换公式：
+**当前只有能量曲线、没有录像或对齐资料，也可以先做窗口平均和粗分段。** 提取时用 `--time-origin first`，程序在本机自动取曲线第一个点作为 0 秒，不需要填写真实日期时间：
+
+```powershell
+python -m sync_eval prepare --kind plotly --input "LOCAL_REPORT.html" --session session_01 --trace-name "mean cross energy" --time-format datetime --time-origin first --energy-scale linear
+python -m sync_eval analyze --input local-data/session_01_energy.csv --session session_01 --plot
+```
+
+输出图和汇总会明确标为“曲线起点后的秒数，尚未对齐录像”。`session_01_energy.timebase.json` 只记录使用哪种时间参照，不包含日期；真实曲线起点仍只保存在私有对照表中。人工标注对比会拒绝把这种时间直接当作录像时间。
+
+之后拿到录像起点或标注对齐资料时，再显式设置时间起点。只有进行录像/人工标注对比时，双方才需要统一使用“录像开始后的秒数”。转换公式：
 
 ```text
 录像秒数 = 原始时间 - time_origin + offset_seconds
 ```
 
-- `--time-origin`：录像第 0 秒对应的原始时间。必须显式填写，程序不擅自把第一个能量点当作录像开始。
+- `--time-origin first`：只以曲线首点为 0 秒，不声称已对齐录像。
+- `--time-origin` 的明确时间值：录像第 0 秒对应的原始时间。只有确认对齐信息后才填写，程序不把曲线首点冒充录像开始。
 - `--offset-seconds`：再加一个已确认的偏移量，默认 0。正数向录像较晚时刻移动，负数向较早时刻移动。
 - `--time-format seconds`：输入是数值秒数或 `MM:SS` / `HH:MM:SS`。
 - `--time-format datetime`：输入是 ISO 日期时间；起点也须采用对应格式，时区需一致。
-- `--window-origin`：窗口网格在录像上的起点，默认 0。因此两秒窗口为 `[0,2)`、`[2,4)`；四秒窗口为 `[0,4)`、`[4,8)`。
+- `--window-origin`：窗口网格在当前时间轴上的起点，默认 0。因此两秒窗口为 `[0,2)`、`[2,4)`；四秒窗口为 `[0,4)`、`[4,8)`。
 
 例如：能量点的原始时间为 110 秒，录像起点对应原始 100 秒，偏移量为 +2 秒，那么此点位于录像第 12 秒，而不是第 0 秒。
 
 时间起点和偏移必须用录像/项目记录确认。本工具保留 Tom 输出的时间信息供显式转换，不会自动修复 STFT 帧时间或视频时钟误差。所有含真实日期的对齐参数只写入本地对照表。
+
+`analyze` 默认从同名 `.timebase.json` 自动识别时间参照；没有参照文件时标为 `unspecified`。旧的已确认录像时间文件可显式用 `--time-reference video`，但不要用这个参数假装已经完成对齐。
 
 ## 本人提取真实曲线时使用
 

@@ -41,6 +41,10 @@ video-time alignment, non-overlapping 2 s / 4 s means, exploratory low/medium/hi
 segments, and one-to-one event-level Hit/Miss evaluation. It does not change the
 original signal-processing code.
 
+No video is required for initial segmentation: prepare with `--time-origin first`
+to use curve-relative seconds. The output is marked as not video-aligned;
+video-based annotation evaluation requires a confirmed shared time reference.
+
 Start with entirely synthetic inputs (Python 3.10+; no extra dependencies for the core):
 
 ```bash

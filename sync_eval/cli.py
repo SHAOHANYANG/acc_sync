@@ -20,17 +20,26 @@ def analyze(input_path, *, session_id, annotations=None, output_dir="local-resul
             widths=(2.0, 4.0), quantiles=(1 / 3, 2 / 3), thresholds=None,
             window_origin=0.0, sample_period=None, min_coverage=0.8,
             positive_levels=("high",), min_iou=0.5, annotations_complete=False,
-            plot=False):
+            plot=False, time_reference="auto"):
     check_session_id(session_id)
     if not widths or len(set(widths)) != len(widths):
         raise ValueError("Use distinct window widths.")
     if not positive_levels or not set(positive_levels) <= {"low", "medium", "high"}:
         raise ValueError("Invalid positive levels.")
     times, energies = load_curve(input_path)
+    if time_reference == "auto":
+        sidecar = Path(input_path).with_suffix(".timebase.json")
+        time_reference = json.loads(sidecar.read_text(encoding="utf-8")).get("time_reference") \
+            if sidecar.exists() else "unspecified"
+    if time_reference not in {"curve", "video", "unspecified"}:
+        raise ValueError("Invalid time reference.")
+    if annotations is not None and time_reference != "video":
+        raise ValueError("Align the curve with video-based annotations before evaluation.")
     cutoffs = choose_thresholds(energies, quantiles, thresholds)
     gold = load_annotations(annotations) if annotations is not None else None
     summary = {"session_id": session_id, "analysis_energy_scale": "linear",
-               "exploratory_only": True, "window_origin_video_seconds": window_origin,
+               "exploratory_only": True, "time_reference": time_reference,
+               "window_origin_seconds": window_origin,
                "threshold_method": "manual" if thresholds else "input_curve_quantiles",
                "quantiles": list(quantiles) if thresholds is None else None,
                "low_cutoff": cutoffs[0], "high_cutoff": cutoffs[1],
@@ -72,11 +81,12 @@ def analyze(input_path, *, session_id, annotations=None, output_dir="local-resul
     with (destination / f"{session_id}_summary.json").open("x", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2, allow_nan=False)
     if plot:
-        _plot(destination / f"{session_id}_comparison.html", times, energies, computed, gold, cutoffs)
+        _plot(destination / f"{session_id}_comparison.html", times, energies, computed, gold, cutoffs,
+              time_reference)
     return summary
 
 
-def _plot(destination, times, energies, computed, gold, cutoffs):
+def _plot(destination, times, energies, computed, gold, cutoffs, time_reference):
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -99,8 +109,12 @@ def _plot(destination, times, energies, computed, gold, cutoffs):
             fig.add_vrect(x0=event.start, x1=event.end, line_color="#6f42c1",
                           fillcolor="rgba(0,0,0,0)", line_width=2, row=row, col=1)
         fig.update_yaxes(title_text="Linear energy index", row=row, col=1)
-    fig.update_xaxes(title_text="Video time (seconds)", row=len(computed) + 1, col=1)
-    fig.update_layout(title="Exploratory energy segmentation (unvalidated thresholds)", height=850)
+    time_labels = {"video": "Video time (seconds; origin supplied by researcher)",
+                   "curve": "Seconds from curve start (not aligned to video)",
+                   "unspecified": "Time (seconds; reference unspecified)"}
+    fig.update_xaxes(title_text=time_labels[time_reference], row=len(computed) + 1, col=1)
+    fig.update_layout(title="Exploratory energy segmentation (unvalidated thresholds)<br>"
+                      + time_labels[time_reference], height=850)
     # Embed JS so viewing the local chart does not contact a CDN.
     fig.write_html(destination, include_plotlyjs=True, auto_open=False)
 
@@ -139,7 +153,8 @@ def parser():
     prep.add_argument("--input", required=True)
     prep.add_argument("--kind", choices=["csv", "plotly"], required=True)
     prep.add_argument("--session", required=True)
-    prep.add_argument("--time-origin", required=True)
+    prep.add_argument("--time-origin", required=True,
+                      help="Use 'first' for curve-relative time, or supply a confirmed video origin.")
     prep.add_argument("--time-format", choices=["seconds", "datetime"], default="seconds")
     prep.add_argument("--offset-seconds", type=float, default=0.0)
     prep.add_argument("--energy-scale", choices=["linear", "db"], required=True)
@@ -165,6 +180,7 @@ def parser():
     run.add_argument("--min-iou", type=float, default=0.5)
     run.add_argument("--annotations-complete", action="store_true")
     run.add_argument("--plot", action="store_true")
+    run.add_argument("--time-reference", choices=["auto", "curve", "video"], default="auto")
     fake = commands.add_parser("demo", help="Generate and analyze synthetic data only.")
     fake.add_argument("--output-dir", default="local-results/synthetic-demo")
     fake.add_argument("--plot", action="store_true")
