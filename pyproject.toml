@@ -17,4 +17,4 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["acc_sync*"]
+include = ["acc_sync*", "sync_eval*"]

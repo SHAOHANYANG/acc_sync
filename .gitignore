@@ -1,5 +1,19 @@
 dev.ipynb
 
+# Private research inputs, linkage maps, and derived results. Never commit these.
+/data/
+/local-data/
+/local-results/
+/private/
+/outputs/
+*.parquet
+*.csv
+*.html
+*.json
+*.tmp
+!examples/synthetic/*.csv
+!templates/*.csv
+
 ### Below are GitHub python template ignore rules
 # Byte-compiled / optimized / DLL files
 __pycache__/
