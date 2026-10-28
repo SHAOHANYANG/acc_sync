@@ -57,3 +57,21 @@ See [the offline usage guide](docs/offline-evaluation.md) and the
 are run only by the researcher in the approved local environment. Numbered
 exports, mapping tables and derived results remain in ignored local folders;
 only code, blank templates and explicitly synthetic examples belong in Git.
+
+## Energy + Duration experiments
+
+`sync_eval explore` reuses those window means and compares two interpretable
+rules: a single energy threshold with a minimum continuous duration, and a
+higher-energy/shorter-duration OR lower-energy/longer-duration rule. It records
+every parameter, event interval, and 2 s / 4 s comparison without selecting an
+unvalidated "best" rule. Optional independent positive AND negative interval
+labels support descriptive energy-group comparison and point-biserial r;
+energy-derived labels are not accepted as validation references.
+
+```powershell
+python -m sync_eval explore-demo --output-dir local-results/synthetic-energy-duration-demo --plot
+```
+
+This command creates invented data only. See
+[the experiment guide](docs/window-energy-experiments.md) for exact rules,
+parameter grids, label requirements, and researcher-only real-data commands.

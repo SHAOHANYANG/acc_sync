@@ -8,6 +8,7 @@ from .core import (Event, choose_thresholds, evaluate_events, merge_windows,
                    valid_coverage, window_average)
 from .io import (check_session_id, load_annotations, load_curve, prepare_curve,
                  private_directory, write_csv)
+from .exploration import explore, exploration_demo
 
 
 class QuietParser(argparse.ArgumentParser):
@@ -184,6 +185,30 @@ def parser():
     fake = commands.add_parser("demo", help="Generate and analyze synthetic data only.")
     fake.add_argument("--output-dir", default="local-results/synthetic-demo")
     fake.add_argument("--plot", action="store_true")
+    sweep = commands.add_parser("explore", help="Locally compare energy + duration rules; never print input values.")
+    sweep.add_argument("--input", required=True)
+    sweep.add_argument("--session", required=True)
+    sweep.add_argument("--output-dir", default="local-results/window-exploration")
+    sweep.add_argument("--reuse-windows", help="Optional prior session result folder; means are checked for consistency.")
+    cuts = sweep.add_mutually_exclusive_group()
+    cuts.add_argument("--thresholds", type=float, nargs="+")
+    cuts.add_argument("--quantiles", type=float, nargs="+", default=[.5, 2 / 3, .8, .9])
+    sweep.add_argument("--durations", type=float, nargs="+", default=[2, 4, 8, 12])
+    sweep.add_argument("--short-durations", type=float, nargs="+", default=[2, 4])
+    sweep.add_argument("--long-durations", type=float, nargs="+", default=[8, 12])
+    sweep.add_argument("--window-origin", type=float, default=0.0)
+    sweep.add_argument("--sample-period", type=float)
+    sweep.add_argument("--min-coverage", type=float, default=.8)
+    sweep.add_argument("--time-reference", choices=["auto", "curve", "video"], default="auto")
+    sweep.add_argument("--reference-labels", help="Optional independent start,end,label intervals; no clinical notes.")
+    sweep.add_argument("--labels-independent", action="store_true")
+    sweep.add_argument("--alignment-confirmed", action="store_true")
+    sweep.add_argument("--annotation-time-reference", choices=["curve", "video"])
+    sweep.add_argument("--annotation-source", choices=["independent_human"])
+    sweep.add_argument("--plot", action="store_true")
+    experiment_fake = commands.add_parser("explore-demo", help="Run energy + duration experiments on invented data only.")
+    experiment_fake.add_argument("--output-dir", default="local-results/window-exploration-synthetic")
+    experiment_fake.add_argument("--plot", action="store_true")
     return root
 
 
@@ -200,14 +225,17 @@ def _safe_failure(exception, stage):
                  "private_directory", "write_csv", "seconds", "_number", "_array",
                  "plotly_energy", "prepare_curve", "load_curve", "load_annotations",
                  "validate_curve", "quantile", "choose_thresholds", "window_average",
-                 "merge_windows", "valid_coverage", "interval_iou", "evaluate_events"}
+                 "merge_windows", "valid_coverage", "interval_iou", "evaluate_events",
+                 "explore", "exploration_demo", "_finite_values", "_event", "detect_runs", "detect_dual",
+                 "intersections", "_length", "load_references", "point_biserial", "compare_reference",
+                 "checked_cached_windows", "_effective_duration", "_write_report", "_plot_experiment"}
     location = "entry"
     trace = exception.__traceback__
     while trace is not None:
         frame = trace.tb_frame
         module = frame.f_globals.get("__name__")
         function = frame.f_code.co_name
-        if module in {"sync_eval.cli", "sync_eval.io", "sync_eval.core"} and function in functions:
+        if module in {"sync_eval.cli", "sync_eval.io", "sync_eval.core", "sync_eval.exploration"} and function in functions:
             location = f"{module}.{function}:{trace.tb_lineno}"
         trace = trace.tb_next
     print(f"FAILED [{stage}/{category}/{location}]: No input details are printed.")
@@ -218,7 +246,8 @@ def main(argv=None):
     try:
         options = vars(parser().parse_args(argv))
         command = options.pop("command")
-        stage = {"prepare": "PREPARE", "analyze": "ANALYZE", "demo": "DEMO"}[command]
+        stage = {"prepare": "PREPARE", "analyze": "ANALYZE", "demo": "DEMO",
+                 "explore": "EXPLORE", "explore-demo": "EXPLORE_DEMO"}[command]
         if command == "prepare":
             options["session_id"] = options.pop("session")
             options["input_path"] = options.pop("input")
@@ -227,6 +256,12 @@ def main(argv=None):
             options["session_id"] = options.pop("session")
             options["input_path"] = options.pop("input")
             analyze(**options)
+        elif command == "explore":
+            options["session_id"] = options.pop("session")
+            options["input_path"] = options.pop("input")
+            explore(**options)
+        elif command == "explore-demo":
+            exploration_demo(**options)
         else:
             demo(**options)
     except Exception as exception:
