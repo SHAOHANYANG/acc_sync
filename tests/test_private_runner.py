@@ -21,7 +21,7 @@ class PrivateRunnerTests(unittest.TestCase):
         cls.temporary = tempfile.TemporaryDirectory()
         cls.root = Path(cls.temporary.name)
         source = Path(__file__).resolve().parents[1]
-        for name in ("run_real.py", "check_data.py", "generate_fake_data.py", "run_fake_tests.py",
+        for name in ("run_real.py", "check_data.py", "generate_fake_data.py", "run_fake_tests.py", "run_synthetic_benchmark.py",
                      "real_config.json", "fake_config.json", "AGENTS.md", ".gitignore"):
             shutil.copyfile(source / name, cls.root / name)
         for directory in ("safe_pipeline", "sync_eval", "tests"):
@@ -97,10 +97,14 @@ class PrivateRunnerTests(unittest.TestCase):
         sessions, count = check_data(self.root / "fake_data/valid")
         output = self.root / "fake_results/figure_route_test"
         config = json.loads((self.root / "fake_config.json").read_text())
-        with patch.object(boundary, "REPO", self.root), patch("safe_pipeline.analysis._render") as render:
+        with patch.object(boundary, "REPO", self.root), patch("safe_pipeline.analysis._render") as render, \
+                patch("safe_pipeline.analysis.plot_phase") as phase_render:
             analyse(sessions, count, output, config, fake=True, figures=True)
             self.assertEqual(render.call_count, 2)
             for call in render.call_args_list:
+                self.assertTrue(call.args[0].is_relative_to(output / "figures"))
+            self.assertEqual(phase_render.call_count, 2)
+            for call in phase_render.call_args_list:
                 self.assertTrue(call.args[0].is_relative_to(output / "figures"))
         self.assertEqual(list((output / "tables").rglob("*.html")), [])
 

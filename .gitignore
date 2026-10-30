@@ -16,6 +16,8 @@ dev.ipynb
 !examples/synthetic/*.csv
 !templates/*.csv
 !fake_data/**/*.csv
+# Benchmark replicates are regenerated, not checked-in fixtures.
+/fake_data/benchmark/
 !real_config.json
 !fake_config.json
 

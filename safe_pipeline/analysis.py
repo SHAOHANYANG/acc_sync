@@ -14,6 +14,7 @@ from sync_eval.core import Event, evaluate_events, valid_coverage, window_averag
 from sync_eval.exploration import (ReferenceInterval, _plot_experiment, compare_reference,
                                    explore, intersections, point_biserial)
 from .boundary import safe_output_directory
+from sync_eval.robustness import phase_scan, plot_phase, save_phase_tables
 
 
 def _read_rows(path):
@@ -82,6 +83,9 @@ def analyse(sessions, file_count, output, config, *, fake=False, figures=True):
                 for k, v in r.items() if k not in {"rule_id", "width_s"}})
         windows = {width: window_average(session.times, session.energies, width,
                     origin=config.get("window_origin", 0), min_coverage=config.get("min_coverage", .8)) for width in (2, 4)}
+        stability = phase_scan(session.times, session.energies, grid,
+            origin=config.get("window_origin", 0), min_coverage=config.get("min_coverage", .8))
+        save_phase_tables(directory, session.session_id, stability)
         references = _reference(session)
         comparisons, labelled, session_evaluation = {}, [], []
         for width in (2, 4):
@@ -135,6 +139,7 @@ def analyse(sessions, file_count, output, config, *, fake=False, figures=True):
         if figures:
             _render(plots / f"{session.session_id}.html", session, windows, grid, event_map,
                     comparisons, labelled, metadata)
+            plot_phase(plots / f"{session.session_id}_origin_sensitivity.html", stability, fake=fake)
     rule_rows, key_numbers = [], {}
     for index, (key, r) in enumerate(sorted(rule_totals.items()), 1):
         key_numbers[key] = index

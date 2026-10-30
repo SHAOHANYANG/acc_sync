@@ -100,6 +100,9 @@ python run_real.py --last-summary
 - 有 annotations_complete 确认仍不够：还需明确正/负时间区间实际覆盖全部有效时间，才允许把未匹配预测记作误报。
 - 不声明高能量等于真实同步；不把 r_pb 或候选数量解释为准确率。
 - 参考上游5.12秒分析窗、时间标记和能量尺度的既有局限继续适用，本入口不偷偷修改它们。
+- 每个session额外扫描4种窗口起点（配置起点加0、1/4、1/2、3/4窗宽）。阈值固定、时钟不平移；只在共同有效时间比较候选区间。详细稳定性表/说明在本次tables目录，图在figures目录。AI不打开真实结果，也不增加聊天白名单字段。
+
+假数据的系统压力实验另见 [robustness-experiments.md](robustness-experiments.md)。`python run_synthetic_benchmark.py` 不接受研究输入路径，只生成并分析虚构曲线，不能用它绕过真实入口。
 
 ## 保存位置
 

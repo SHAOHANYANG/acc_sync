@@ -24,6 +24,7 @@ PUBLIC_FUNCTIONS = {
     "safe_pipeline/analysis.py": {"analyse", "_reference", "_read_rows", "_evaluate", "_render", "_groups"},
     "sync_eval/core.py": {"window_average", "validate_curve", "quantile", "evaluate_events", "interval_iou", "valid_coverage"},
     "sync_eval/io.py": {"load_curve", "write_csv", "private_directory", "check_session_id", "seconds", "_number", "protected_input"},
+    "sync_eval/robustness.py": {"phase_scan", "apply_rule", "agreement", "save_phase_tables", "plot_phase"},
     "sync_eval/exploration.py": {"explore", "detect_runs", "detect_dual", "_plot_experiment", "_finite_values",
                                 "_write_report", "point_biserial", "compare_reference", "_event", "_effective_duration"},
 }
@@ -110,7 +111,7 @@ def load_config(path):
 def fingerprint():
     # Only explicit public source/config/test paths. Never scan input/result trees.
     files = [REPO / name for name in ("AGENTS.md", ".gitignore", "run_real.py", "check_data.py",
-        "run_fake_tests.py", "generate_fake_data.py", "real_config.json", "fake_config.json")]
+        "run_fake_tests.py", "generate_fake_data.py", "run_synthetic_benchmark.py", "real_config.json", "fake_config.json")]
     for directory in ("safe_pipeline", "sync_eval", "tests"):
         files += sorted((REPO / directory).glob("*.py"))
     digest = hashlib.sha256()
