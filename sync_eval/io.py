@@ -11,6 +11,15 @@ import struct
 
 from .core import ACTIVITY_TYPES, Event, validate_curve
 
+_RUN_REAL_ACTIVE = False
+
+
+def protected_input(path):
+    repository = Path(__file__).resolve().parent.parent
+    source = Path(path).absolute()
+    if (source.is_relative_to(repository / "data") or source.resolve().is_relative_to(repository / "data")) and not _RUN_REAL_ACTIVE:
+        raise PermissionError()
+
 
 def check_session_id(session_id):
     if not re.fullmatch(r"session_[0-9]{2,}", session_id):
@@ -22,7 +31,7 @@ def private_directory(path):
     repository = Path(__file__).resolve().parent.parent
     if path.is_relative_to(repository):
         parts = path.relative_to(repository).parts
-        if not parts or parts[0] not in {"local-data", "local-results", "private"}:
+        if not parts or parts[0] not in {"local-data", "local-results", "private", "results", "fake_results"}:
             raise ValueError("Use an ignored local directory or a location outside this repository.")
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -84,6 +93,7 @@ def _array(value):
 
 def plotly_energy(path, trace_name="mean cross energy"):
     """Decode data arguments of Plotly.newPlot; no browser, eval, or JS execution."""
+    protected_input(path)
     text = Path(path).read_text(encoding="utf-8")
     decoder, found = json.JSONDecoder(), []
     for candidate in re.finditer(r"Plotly\.newPlot\s*\(\s*", text):
@@ -114,6 +124,7 @@ def prepare_curve(input_path, *, kind, session_id, time_origin,
     'first' uses the first curve point without claiming video alignment.
     An explicit origin declares the source clock at video time zero.
     """
+    protected_input(input_path)
     check_session_id(session_id)
     input_path = Path(input_path).resolve()
     if kind == "plotly":
@@ -192,6 +203,7 @@ def prepare_curve(input_path, *, kind, session_id, time_origin,
 
 
 def load_curve(path):
+    protected_input(path)
     with Path(path).open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)
         if reader.fieldnames != ["time_s", "energy"]:
@@ -203,6 +215,7 @@ def load_curve(path):
 
 
 def load_annotations(path):
+    protected_input(path)
     with Path(path).open(newline="", encoding="utf-8-sig") as handle:
         reader = csv.DictReader(handle)
         if reader.fieldnames != ["start", "end", "activity_type"]:

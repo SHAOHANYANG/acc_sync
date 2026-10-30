@@ -2,6 +2,8 @@ dev.ipynb
 
 # Private research inputs, linkage maps, and derived results. Never commit these.
 /data/
+/results/
+/fake_results/
 /local-data/
 /local-results/
 /private/
@@ -13,6 +15,9 @@ dev.ipynb
 *.tmp
 !examples/synthetic/*.csv
 !templates/*.csv
+!fake_data/**/*.csv
+!real_config.json
+!fake_config.json
 
 ### Below are GitHub python template ignore rules
 # Byte-compiled / optimized / DLL files

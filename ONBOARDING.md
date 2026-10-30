@@ -1,5 +1,9 @@
 # Onboarding Guide (WIP)
 
+> This is the original upstream API guide. For this fork, research processing
+> must follow [AGENTS.md](AGENTS.md) and [run_real.py](docs/private-runner.md).
+> Do not run the old raw-data examples on research files or upload clinical notes.
+
 ## Setting up your environment
 
 If you feel confident with Python and package management, you can skip this section.

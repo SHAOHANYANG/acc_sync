@@ -1,0 +1,13 @@
+{
+  "quantiles": [0.5, 0.6666666666666666, 0.8, 0.9],
+  "durations": [2, 4, 8, 12],
+  "short_durations": [2, 4],
+  "long_durations": [8, 12],
+  "window_origin": 0,
+  "min_coverage": 0.8,
+  "time_reference": "curve",
+  "labels_independent": false,
+  "alignment_confirmed": false,
+  "annotations_complete": false,
+  "min_iou": 0.5
+}

@@ -1,6 +1,26 @@
 # Accelerometer Synchrony
 Measuring movement synchrony between subjects wearing Bangle.js 2 smartwatches.
 
+## Required research workflow (2026-10-29)
+
+Read [AGENTS.md](AGENTS.md). Research inputs may be processed **only** through
+`run_real.py`, after `python run_fake_tests.py` passes. The AI sees only closed-schema
+numeric aggregates, rounded to three significant digits, or sanitized errors.
+It never opens research figures or detailed tables.
+
+```powershell
+python generate_fake_data.py
+python run_fake_tests.py
+python run_real.py --fake
+python run_real.py --check
+python run_real.py
+```
+
+See [the controlled-entry guide](docs/private-runner.md) for the input contract,
+output whitelist, annotation requirements, and tested boundaries. Data and
+results are never committed. Legacy API/CLI examples below are reference for
+synthetic development only; earlier direct real-data commands are superseded.
+
 ## Setup
 
 Navigate to the project directory and run:
@@ -8,7 +28,8 @@ Navigate to the project directory and run:
 pip install -e .
 ```
 
-There's some sample data in the `data/` directory, but you'll need to put the actual parquet files there.
+Research inputs are not tracked. The controlled workflow accepts numbered
+numerical energy CSVs and timestamp-only intervals in `data/`, not raw Parquet.
 
 ## Usage
 
@@ -57,6 +78,8 @@ See [the offline usage guide](docs/offline-evaluation.md) and the
 are run only by the researcher in the approved local environment. Numbered
 exports, mapping tables and derived results remain in ignored local folders;
 only code, blank templates and explicitly synthetic examples belong in Git.
+The current entry for all research processing is `run_real.py`; the older guide
+is retained only as analysis-method documentation.
 
 ## Energy + Duration experiments
 

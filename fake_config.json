@@ -1,0 +1,13 @@
+{
+  "thresholds": [2, 4, 6],
+  "durations": [2, 4, 8],
+  "short_durations": [2],
+  "long_durations": [8],
+  "window_origin": 0,
+  "min_coverage": 0.8,
+  "time_reference": "curve",
+  "labels_independent": true,
+  "alignment_confirmed": true,
+  "annotations_complete": true,
+  "min_iou": 0.5
+}
