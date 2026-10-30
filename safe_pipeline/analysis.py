@@ -15,6 +15,7 @@ from sync_eval.exploration import (ReferenceInterval, _plot_experiment, compare_
                                    explore, intersections, point_biserial)
 from .boundary import safe_output_directory
 from sync_eval.robustness import phase_scan, plot_phase, save_phase_tables
+from sync_eval.parameter_plots import save_dual_heatmap
 
 
 def _read_rows(path):
@@ -140,6 +141,7 @@ def analyse(sessions, file_count, output, config, *, fake=False, figures=True):
             _render(plots / f"{session.session_id}.html", session, windows, grid, event_map,
                     comparisons, labelled, metadata)
             plot_phase(plots / f"{session.session_id}_origin_sensitivity.html", stability, fake=fake)
+            save_dual_heatmap(plots / f"{session.session_id}_dual_heatmap.html", grid, fake=fake)
     rule_rows, key_numbers = [], {}
     for index, (key, r) in enumerate(sorted(rule_totals.items()), 1):
         key_numbers[key] = index

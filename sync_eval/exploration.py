@@ -466,9 +466,11 @@ def _plot_experiment(path, times, energies, windows, grid, event_map, comparison
         heatmap.add_trace(go.Heatmap(x=ds, y=ts, z=z, zmin=0, zmax=1, coloraxis="coloraxis"), row=1, col=col)
         heatmap.update_xaxes(title_text="Requested minimum duration (s)", row=1, col=col)
         heatmap.update_yaxes(title_text="Energy threshold", row=1, col=col)
-    heatmap.update_layout(title=f"{tag}<br>Fraction of valid time selected, not accuracy", height=430,
+    heatmap.update_layout(title=f"{tag}<br>SINGLE threshold + minimum duration: fraction of valid time selected, not accuracy", height=430,
                           coloraxis={"colorscale": "Viridis", "cmin": 0, "cmax": 1, "colorbar": {"title": "Fraction"}})
     figures = [curve, timeline, heatmap]
+    from .parameter_plots import dual_heatmap_figure
+    figures.append(dual_heatmap_figure(grid, fake=metadata["provenance"] == "synthetic"))
     if labelled_rows:
         grouped = make_subplots(rows=1, cols=2, subplot_titles=["2s independent labels", "4s independent labels"])
         for col, width in enumerate((2, 4), 1):

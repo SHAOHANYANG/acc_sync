@@ -25,6 +25,7 @@ PUBLIC_FUNCTIONS = {
     "sync_eval/core.py": {"window_average", "validate_curve", "quantile", "evaluate_events", "interval_iou", "valid_coverage"},
     "sync_eval/io.py": {"load_curve", "write_csv", "private_directory", "check_session_id", "seconds", "_number", "protected_input"},
     "sync_eval/robustness.py": {"phase_scan", "apply_rule", "agreement", "save_phase_tables", "plot_phase"},
+    "sync_eval/parameter_plots.py": {"dual_heatmap_data", "_pair_label", "dual_heatmap_figure", "save_dual_heatmap"},
     "sync_eval/exploration.py": {"explore", "detect_runs", "detect_dual", "_plot_experiment", "_finite_values",
                                 "_write_report", "point_biserial", "compare_reference", "_event", "_effective_duration"},
 }

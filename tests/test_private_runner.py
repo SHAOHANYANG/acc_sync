@@ -98,13 +98,17 @@ class PrivateRunnerTests(unittest.TestCase):
         output = self.root / "fake_results/figure_route_test"
         config = json.loads((self.root / "fake_config.json").read_text())
         with patch.object(boundary, "REPO", self.root), patch("safe_pipeline.analysis._render") as render, \
-                patch("safe_pipeline.analysis.plot_phase") as phase_render:
+                patch("safe_pipeline.analysis.plot_phase") as phase_render, \
+                patch("safe_pipeline.analysis.save_dual_heatmap") as dual_render:
             analyse(sessions, count, output, config, fake=True, figures=True)
             self.assertEqual(render.call_count, 2)
             for call in render.call_args_list:
                 self.assertTrue(call.args[0].is_relative_to(output / "figures"))
             self.assertEqual(phase_render.call_count, 2)
             for call in phase_render.call_args_list:
+                self.assertTrue(call.args[0].is_relative_to(output / "figures"))
+            self.assertEqual(dual_render.call_count, 2)
+            for call in dual_render.call_args_list:
                 self.assertTrue(call.args[0].is_relative_to(output / "figures"))
         self.assertEqual(list((output / "tables").rglob("*.html")), [])
 
